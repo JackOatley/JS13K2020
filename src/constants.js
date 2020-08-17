@@ -1,6 +1,7 @@
 
 // game settings
-export const NODE_DISTANCE = 64;
+export const PREFIX = 'linx';
+export const NODE_DISTANCE = 80;
 
 // numbers
 export const TAU = Math.PI * 2;

@@ -10,7 +10,7 @@ export const levels = [
 		[NODE.BASIC, 6, 6],
 		[NODE.BASIC, 8, 4],
 		[NODE.BASIC, 9, 4],
-		[NODE.BASIC, 10, 4],
+		[NODE.BASIC, 10, 4]
 	]
 
 ];

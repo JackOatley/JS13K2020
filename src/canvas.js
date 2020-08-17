@@ -1,7 +1,7 @@
 import { log } from './dev.js';
 
 /**
- *
+ * @param {!HTMLCanvasElement} canvas
  */
 export function canvasToWindowSize(canvas) {
 	if (canvas.width !== window.innerWidth
@@ -13,7 +13,8 @@ export function canvasToWindowSize(canvas) {
 }
 
 /**
- *
+ * @param {!CanvasRenderingContext2D} ctx
+ * @param {!string} color CSS Color, gradient, pattern, etc.
  */
 export function canvasClear(ctx, color) {
 	ctx.fillStyle = color;
