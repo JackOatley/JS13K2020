@@ -1,4 +1,8 @@
 
+export function lerp(a, b, t) {
+	return (1 - t) * a + t * b;
+}
+
 export function angleBetweenPoints(a, b) {
 	return Math.atan2(b.y - a.y, b.x - a.x);
 }

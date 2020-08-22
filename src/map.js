@@ -4,11 +4,9 @@ import { levels } from './levels.js';
 
 /**
  * @param {!number} index
- * @return {void}
  */
 export function mapLoad(index) {
-	const level = levels[index];
-	level.forEach(n => new Node(...n))
+	levels[index].forEach(n => new Node(...n))
 }
 
 /**
@@ -20,15 +18,12 @@ export function generateMap(size) {
 	while (Node.instances.length < size) {
 
 		// create a new node if there isn't already one here
-		if (Node.getNodeAtPosition(x, y) === null) {
+		if (Node.getNodeAtPosition(x, y) === null)
 			new Node(NODE.BASIC, x, y);
-		}
 
 		// move
-		if (Math.random() < 0.5)
-			x += (~~(Math.random() * 3) - 1);
-		else
-			y += (~~(Math.random() * 3) - 1);
+		x += (~~(Math.random() * 3) - 1);
+		y += (~~(Math.random() * 3) - 1);
 
 	}
 }
@@ -38,9 +33,15 @@ export function generateMap(size) {
  * @param {!number} p Number of players to place.
  */
 export function placeStartLocations(p) {
-	const length = Node.instances.length;
-	const pos1 = ~~(Math.random() * length);
-	const pos2 = ~~(Math.random() * length);
-	Node.instances[pos1].owner = 1;
-	Node.instances[pos2].owner = 2;
+	const instances = Node.instances;
+	const length = instances.length;
+	for (let pos, n = 1; n <= p; n++) {
+		console.log(n);
+		do pos = ~~(Math.random() * length);
+		while (instances[pos].owner !== 0)
+		instances[pos].owner = n;
+		instances[pos].size = 20;
+		instances[pos].units = 20;
+		instances[pos].capacity = 20 * 2 + 1;
+	}
 }
