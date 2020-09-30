@@ -36,7 +36,6 @@ export function placeStartLocations(p) {
 	const instances = Node.instances;
 	const length = instances.length;
 	for (let pos, n = 1; n <= p; n++) {
-		console.log(n);
 		do pos = ~~(Math.random() * length);
 		while (instances[pos].owner !== 0)
 		instances[pos].owner = n;

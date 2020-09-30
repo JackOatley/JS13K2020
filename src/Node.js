@@ -8,13 +8,15 @@ import {
 	distanceBetweenPoints, angleBetweenPoints, linesIntersect, lerp
 } from './math.js';
 import { teamGetColorAsCss } from './teams.js';
+import { unitCreate } from './unit.js';
+import { drawSprite, circles, ringSprite } from './sprites.js';
+import { camera } from './camera.js';
 
 const subway = false;			// subway mode
 const connections = [];
 
 let id = 0;
 let turnTimer = 0;
-let aiTurn = 0;
 
 export class Node {
 
@@ -36,18 +38,19 @@ export class Node {
 		this.target = null;
 		this.mouseOver = false;
 		this.selected = false;
+		this.priorities = [];		// this node's priority for each team
 		Node.instances.push(this);
 	}
 
 	/**
 	 * @param {!number} dt
 	 */
-	update(dt) {
+	update() {
 
 		this.mouseOver = distanceBetweenPoints(this, mouse) < NODE_DISTANCE / 2;
 
 		// selecte a node
-		if (mouse.pressed[1])
+		if (mouse.pressed[1] && this.owner === 1)
 			if (this.selected = this.mouseOver)
 				Node.selected = this;
 
@@ -64,6 +67,8 @@ export class Node {
 	 *
 	 */
 	takeTurn() {
+
+		let sendUnits = 0;
 
 		// ai
 		if (this.owner > 1) {
@@ -99,59 +104,43 @@ export class Node {
 				// transfer to friendly
 				if (this.target.owner === this.owner) {
 					const max = this.target.capacity - this.target.units;
-					const move = Math.min(max, ~~this.units / NODE_SPLIT);
-					this.units -= move;
-					this.target.units += move;
-				}
-
-				// attack
-				else if (this.units > 2) {
-					const force = ~~this.units / NODE_SPLIT;
-					const balance = force / this.target.units;
-					const adjusted = lerp(1, balance, BALANCE_EFFECT);
-					this.units -= force;
-					this.target.units -= force * adjusted;
-					if (this.target.units < 0) {
-						this.target.target = null;
-						this.target.owner = this.owner;
-						this.target.units = this.units / 2;
-						this.units /= 2;
+					const move = Math.min(max, ~~(this.units / NODE_SPLIT));
+					if (move > 1) {
+						sendUnits = move;
+						this.units -= move;
+						this.target.units += move;
 					}
 				}
 
-			}
+				// attack
+				else if (this.units > 1) {
+					const force = ~~this.units / NODE_SPLIT;
+					const balance = force / this.target.units;
+					const adjusted = lerp(1, balance, BALANCE_EFFECT);
+					if (force > 1) {
+						sendUnits = force
+						this.units -= force;
+						this.target.units -= force * adjusted;
+						if (this.target.units < 0) {
+							this.target.target = null;
+							this.target.owner = this.owner;
+							this.target.units = this.units / 2;
+							this.units /= 2;
+						}
+					}
 
+				}
+
+			}
 		}
 
-	}
-
-	/**
-	 * @param {!CanvasRenderingContext2D} ctx
-	 * @param {!number} dt
-	 */
-	draw(ctx, dt) {
-		const { x, y, size, units } = this;
-
-		ctx.lineWidth = 2;
-		ctx.beginPath();
-		ctx.arc(x, y, units/2, 0, TAU);
-
-		ctx.fillStyle = teamGetColorAsCss(this.owner, 1);
-		ctx.fill();
-
-		const nsize = size + this.mouseOver * 2;
-		ctx.beginPath();
-		ctx.arc(x, y, nsize, 0, TAU);
-		ctx.strokeStyle = '#FFF';
-		ctx.stroke();
-
-		if (this.selected) {
-			const anim = 6 + Math.sin(performance.now() / 100);
-			ctx.lineWidth = 4;
-			ctx.beginPath();
-			ctx.arc(x, y, size+anim, 0, TAU);
-			ctx.strokeStyle = '#FFF';
-			ctx.stroke();
+		// create units
+		for (let n = 0; n < sendUnits; n++) {
+			unitCreate(
+				this.x, this.y,
+				this.target.x, this.target.y,
+				this.owner
+			);
 		}
 
 	}
@@ -183,9 +172,9 @@ export class Node {
 	/**
 	 * @param {!number} dt
 	 */
-	static updateNodes(dt) {
+	static updateNodes() {
 		if (mouse.pressed[1]) Node.selected = null;
-		Node.instances.forEach(i => i.update(dt));
+		Node.instances.forEach(i => i.update());
 		if (turnTimer-- <= 0) {
 			Node.instances.forEach(i => i.takeTurn());
 			turnTimer += TURN_COOLDOWN;
@@ -197,33 +186,31 @@ export class Node {
 	 * @param {!CanvasRenderingContext2D} ctx
 	 * @param {!number} dt
 	 */
-	static drawNodes(ctx, dt) {
+	static drawNodes(ctx) {
 
-		// draw fills
-		Node.instances.forEach(i => {
-			const { x, y, size, units } = i;
-			ctx.beginPath();
-			ctx.arc(x, y, units/2, 0, TAU);
-			ctx.fillStyle = teamGetColorAsCss(i.owner, 1);
-			ctx.fill();
-		});
-
-		// draw outlines
-		ctx.lineWidth = 2;
-		ctx.strokeStyle = '#FFF';
-		ctx.beginPath();
-		Node.instances.forEach(i => {
-			const { x, y, size, units } = i;
-			const nsize = size + i.mouseOver * 2;
-			ctx.moveTo(x + size, y);
-			ctx.arc(x, y, nsize, 0, TAU);
-		});
-		ctx.stroke();
+		// draw fills and outlines
+		const instances = Node.instances;
+		const length = instances.length;
+		const cameraLeft = camera.x - ctx.canvas.width / 2;
+		const cameraRight = camera.x + ctx.canvas.width / 2;
+		const cameraTop = camera.y - ctx.canvas.height / 2;
+		const cameraBottom = camera.y + ctx.canvas.height / 2;
+		for (let n = 0; n < length; n++) {
+			const i = instances[n];
+			if (!(i.x < cameraLeft
+			||    i.x > cameraRight
+			||    i.y < cameraTop
+			||    i.y > cameraBottom)) {
+				drawSprite(ctx, circles[i.owner], i.x, i.y, i.units/32);
+				drawSprite(ctx, ringSprite, i.x, i.y, i.size/(32 - i.mouseOver * 4));
+			}
+		}
 
 		// draw selected node
 		if (Node.selected) {
 			const { x, y, size, units } = Node.selected;
 			const anim = 6 + Math.sin(performance.now() / 100);
+			ctx.strokeStyle = '#FFF';
 			ctx.lineWidth = 4;
 			ctx.beginPath();
 			ctx.arc(x, y, size+anim, 0, TAU);

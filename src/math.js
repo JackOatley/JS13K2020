@@ -1,3 +1,6 @@
+// numbers
+export const PI = Math.PI;
+export const TAU = PI * 2;
 
 export function lerp(a, b, t) {
 	return (1 - t) * a + t * b;
@@ -9,6 +12,24 @@ export function angleBetweenPoints(a, b) {
 
 export function distanceBetweenPoints(a, b) {
 	return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+}
+
+/**
+ * @param {!number} a
+ * @param {!number} b
+ * @return {!number}
+ */
+export function angleDifference(a, b) {
+	return mod((a - b) + PI, TAU) - PI;
+}
+
+/**
+ * @param {!number} a
+ * @param {!number} n
+ * @return {!number}
+ */
+function mod(a, n) {
+	return a - Math.floor(a / n) * n;
 }
 
 /**

@@ -5,6 +5,7 @@ import { Node, getFactionUnits, getFactionCapacity } from './Node.js';
 import { camera } from './camera.js';
 import { roundRect } from './canvas.js';
 import { teamGetColorAsCss, teamGetName } from './teams.js';
+import { unitUpdateAll, unitDrawAll } from './unit.js';
 
 let numberOfTeams = 4;
 
@@ -22,16 +23,17 @@ export function gameSetup() {
 /**
  * @param {!number} dt Delta time
  */
-export function gameUpdate(dt) {
+export function gameUpdate() {
 	camera.update();
-	Node.updateNodes(dt);
+	Node.updateNodes();
+	unitUpdateAll();
 }
 
 /**
  * @param {!CanvasRenderingContext2D} ctx
  * @param {!number} dt Delta time
  */
-export function gameDraw(ctx, dt) {
+export function gameDraw(ctx) {
 	const canvas = ctx.canvas;
 	const x = -camera.x + canvas.width / camera.z / 2;
 	const y = -camera.y + canvas.height / camera.z / 2;
@@ -40,9 +42,10 @@ export function gameDraw(ctx, dt) {
 	ctx.save();
 	ctx.scale(camera.z, camera.z);
 	ctx.translate(x, y);
-	Node.drawConnections(ctx, dt);
-	Node.drawNodes(ctx, dt);
+	Node.drawConnections(ctx);
+	Node.drawNodes(ctx);
 	Node.drawTargets(ctx);
+	unitDrawAll(ctx);
 	ctx.restore();
 	drawHUD(ctx);
 }
@@ -88,7 +91,7 @@ function drawGrid(ctx) {
 }
 
 /**
- *
+ * @param {CanvasRenderingContext2D} ctx
  */
 function drawHUD(ctx) {
 	const { width, height } = ctx.canvas;
